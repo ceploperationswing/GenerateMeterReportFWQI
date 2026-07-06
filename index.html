@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>GPS Image Generator</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #fff;
+            font-size: 20px;
+        }
+
+        @page {
+            size: A4;
+            margin: 5mm;
+        }
+
+        @media print {
+
+            html,
+            body {
+                width: 210mm;
+                height: auto;
+                margin: 0px;
+                margin-top: 10px;
+                padding: 5px;
+                background: #fff;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            table {
+                page-break-inside: auto;
+            }
+
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            tfoot {
+                display: table-footer-group;
+            }
+
+            .text_area {
+                border: none;
+            }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 5px;
+            vertical-align: middle;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        thead th {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .page-break {
+            page-break-before: always;
+            break-before: page;
+            text-align: center;
+
+        }
+
+        .pic_div {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .text_area {
+            text-align: center;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /*GENERATE GPS IMAGE CSS*/
+
+
+        .image-container {
+            width: 450px;
+            height: 450px;
+        }
+
+        .main-image {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+        }
+
+
+        /*SEARCH SECTION CSS*/
+
+        .searchCard {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 25px;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .searchCard h2 {
+            margin: 0 0 25px;
+            text-align: center;
+            color: #1f2937;
+        }
+
+        .formRow {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .formRow label {
+            width: 180px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #374151;
+            flex-shrink: 0;
+        }
+
+        .formRow input[type="text"],
+        .formRow input[type="number"],
+        .formRow input[type="file"],
+        .formRow textarea {
+            flex: 1;
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .formRow textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .inputGroup {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+        }
+
+        .inputGroup input {
+            flex: 1;
+        }
+
+        .inputGroup button,
+        .gpsBtn {
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: .3s;
+        }
+
+        .inputGroup button:hover,
+        .gpsBtn:hover {
+            transform: scale(1.05);
+            opacity: .9;
+        }
+
+        .btnRow {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        @media(max-width:768px) {
+
+            .formRow {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .formRow label {
+                width: 100%;
+            }
+
+            .inputGroup {
+                flex-direction: column;
+            }
+
+            .inputGroup button {
+                width: 100%;
+            }
+        }
+
+        .container {
+            border: 2px solid #000;
+            padding: 5px;
+            margin: 10px auto;
+            background: #fff;
+            page-break-inside: avoid;
+        }
+
+        .logos {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding-bottom: 5px;
+            margin: 0px;
+        }
+
+        .rec_logo {
+            width: 120px;
+            height: 50px;
+        }
+
+        .npti_logo {
+            width: 130px;
+            height: 60px;
+        }
+    </style>
+    <!---STYPE TAG END-->
+</head>
+
+<body>
+
+
+
+    <div class="searchCard">
+
+        <h4>Meter Record Search</h4>
+        <div class="formRow">
+            <div class="formRow">
+
+                <label>Select Sheet</label>
+
+                <select id="sheetName">
+                    <option>Loading...</option>
+                </select>
+
+            </div>
+
+        </div>
+
+        <div class="formRow">
+            <label>Photo Number</label>
+
+            <div class="inputGroup">
+                <input type="number" id="photoNo" placeholder="Enter Photo Number">
+
+                <button onclick="searchRecord()">
+                    Search Record
+                </button>
+            </div>
+        </div>
+        <div class="formRow">
+            <label style="color: red;">Photo No. :-</label>
+            <label style="color: red;"><a id="photoNoValue2"></a></label>
+            <label style="color: red;">Meter Serial No. :- </label>
+            <label style="color: red;"><a id="meterSerialValue2"></s></label>
+        </div>
+
+        <div class="formRow">
+            <label>Meter Picture</label>
+            <input type="file" id="imageUpload" accept="image/*" onchange="loadImage(event)">
+        </div>
+    </div>
+    </div>
+    <!--REPORT GENERATOR DIV-->
+
+    <!---DATA DIV START-->
+
+    <div class=" page-break">
+        <div class="container">
+            <div class="logos">
+                <img class="rec_logo"
+                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/REC_logo.svg/1280px-REC_logo.svg.png"
+                    alt="">
+                <img src="https://drive.google.com/thumbnail?id=1iEN9jQ5MmkklgiRvmlNihZd4QH3F3DhC&sz=w1000"
+                    alt="NPTI Logo" class="npti_logo">
+            </div>
+            <table id="table_ex">
+
+                <colgroup>
+                    <col style="width:30%">
+                    <col style="width:20%">
+                    <col style="width:15%">
+                    <col style="width:15%">
+                    <col style="width:20%">
+                </colgroup>
+
+                <thead>
+                    <tr>
+                        <th colspan="5" style="text-decoration: underline;">
+                            Checklist for FQI of Consumer Smart Meter
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    <tr>
+                        <td colspan="5">
+                            <div class="pic_div">
+                                <div class="image-container" id="captureArea">
+                                    <img class="main-image" id="uploadImg" src="" alt="Selected Image">
+                                </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" style="text-align: center;"><b>Photo No: <a id="photoNoValue"></a></b></td>
+                    </tr>
+                    <!--- Section A-->
+                    <tr>
+                        <td colspan="5"><b>A. Basic details </b></td>
+                    </tr>
+                    <tr>
+                        <td colspan="1">i. Meter Serial Number</td>
+                        <td colspan="1">
+                            <div class="value" id="meterSerialValue"></div>
+                        </td>
+                        <td colspan="2">ii. Name of Consumer</td>
+                        <td colspan="1">
+                            <div class="value" id="consumerNameValue"></div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="1">iii. ConnecIon Type</td>
+                        <td colspan="1">
+                            <div class="value" id="connectionTypeValue"></div>
+
+                        </td>
+                        <td colspan="2">iv. Type of smart meter (3Ph/1Ph)</td>
+                        <td colspan="1">
+                            <div class="value" id="smartMeterValue"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="1">v. Consumer Number /K No.:</td>
+                        <td colspan="1">
+                            <div class="value" id="consumerNumberValue"></div>
+                        </td>
+                        <td colspan="2">vi. Make/ Manufacturer detail:</td>
+                        <td colspan="1">
+                            <div class="value" id="manufacturerValue"></div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="1">vii. Type of communicaIon for
+                            consumer smart system is
+                            being used (cellular/RF)</td>
+                        <td colspan="1">
+                            <div class="value" id="communicationValue"></div>
+                        </td>
+                        <td colspan="2">viii. Date of inspecIon</td>
+                        <td colspan="1">
+                            <div class="value" id="inspectionValue"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="1">ix. Address:</td>
+                        <td colspan="4">
+                            <div class="value" id="addressValue"></div>
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <td colspan="1">x.Remark:</td>
+                        <td colspan="4">
+                            <div class="value" id="remarkValue"></div>
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <td colspan="5"><b>B. Workmanship & other details: </b></td>
+                    </tr>
+                    <!--- Section B-->
+                    <tr>
+                        <td colspan="3">i. Whether installaIon /erecIon of service cable is
+                            proper?</td>
+                        <td colspan="1" style="text-align: center;">(Yes/No)</td>
+                        <td colspan="1" style="text-align: center;"><textarea name="Choice" class="text_area"
+                                rows="1"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">ii. Whether smart meter is properly mounted/installed
+                            as per approved Drawing?/td>
+                        <td colspan="1" style="text-align: center;">(Yes/No)</td>
+                        <td colspan="1" style="text-align: center;"><textarea name="Choice" class="text_area"
+                                rows="1"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">iii. Whether smart meter is properly sealed as per
+                            approved drawing?</td>
+                        <td colspan="1" style="text-align: center;">(Yes/No)</td>
+                        <td colspan="1" style="text-align: center;"><textarea name="Choice" class="text_area"
+                                rows="1"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">iv. Whether consumer smart meter is operaIonal?</td>
+                        <td colspan="1" style="text-align: center;">(Yes/No)</td>
+                        <td colspan="1" style="text-align: center;"><textarea name="Choice" class="text_area"
+                                rows="1"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">v. Whether 1st Bill is Generated</td>
+                        <td colspan="1" style="text-align: center;">(Yes/No)</td>
+                        <td colspan="1" style="text-align: center;"><textarea name="Choice" class="text_area"
+                                rows="1"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">Vi. General remarks:</td>
+                        <td colspan="1" style="text-align: center;">(Yes/No)</td>
+                        <td colspan="1" style="text-align: center;"><textarea name="Choice" class="text_area"
+                                rows="1"></textarea>
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+            <br>
+        </div>
+    </div>
+    <!---DATA DIV END -->
+    </div>
+
+    <script>
+
+
+        function loadImage(event) {
+
+            const file = event.target.files[0];
+
+            if (!file) {
+                document.getElementById("uploadImg").removeAttribute("src");
+                return;
+            }
+
+            if (!file.type.startsWith("image/")) {
+                alert("Please select an image.");
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+
+                const img = document.getElementById("uploadImg");
+
+                img.src = e.target.result;
+
+                img.style.display = "block";
+
+            };
+
+            reader.readAsDataURL(file);
+
+        }
+
+        //load all sheets
+
+        //Report Generator Script
+        const API_URL =
+            "https://script.google.com/macros/s/AKfycbyEe_XZ5SLWMobZgvEtq8H91HIZoaVAmpJjOPsfZw0mCSEZTRQIFqekL4nPCssw4WQ/exec";
+
+
+        async function loadSheets() {
+
+            try {
+
+                const response =
+                    await fetch(
+                        API_URL + "?action=getSheets"
+                    );
+
+                const result =
+                    await response.json();
+
+                if (!result.success) {
+
+                    alert("Unable to load sheets");
+                    return;
+
+                }
+
+                const select =
+                    document.getElementById("sheetName");
+
+                select.innerHTML = "";
+
+                result.sheets.forEach(function (sheet) {
+
+                    const option =
+                        document.createElement("option");
+
+                    option.value = sheet;
+                    option.textContent = sheet;
+
+                    select.appendChild(option);
+
+                });
+
+            }
+            catch (err) {
+
+                alert(err);
+
+            }
+
+        }
+
+        async function searchRecord() {
+
+
+            const photoNo =
+                document.getElementById("photoNo")
+                    .value.trim();
+
+            if (!photoNo) {
+                alert("Enter Photo No");
+                return;
+            }
+
+            try {
+
+                const sheet =
+                    document
+                        .getElementById("sheetName")
+                        .value;
+
+                const response =
+                    await fetch(
+                        API_URL +
+                        "?sheet=" +
+                        encodeURIComponent(sheet) +
+                        "&photoNo=" +
+                        encodeURIComponent(photoNo)
+                    );
+
+                const result =
+                    await response.json();
+
+                if (!result.success) {
+
+                    alert(
+                        result.message ||
+                        "Record Not Found"
+                    );
+
+                    return;
+                }
+
+                showRecord(
+                    result.data
+                );
+
+            }
+            catch (err) {
+
+                alert(
+                    "Error : " + err
+                );
+
+            }
+
+        }
+
+        function showRecord(data) {
+
+            const photoNo =
+                data["Photo No"] || "";
+
+            const meterSerial =
+                data["Meter Serial Number"] || "";
+
+            const consumerName =
+                data["Name of Consumer"] || "";
+
+            const connectionType =
+                data["Connection Type"] || "";
+
+            const smartMeter =
+                data["Type of smart meter"] || "";
+
+            const consumerNumber =
+                data["Consumer Number"] || "";
+
+            const manufacturer =
+                data["Make / Manufacturer Detail"] || "";
+
+            const communication =
+                data["Type of communication"] || "";
+
+            const inspection =
+                data["Date of Inspection"] || "";
+
+            const address =
+                data["Address"] || "";
+
+            const remark =
+                data["Remark"] || "";
+
+            document.getElementById("photoNoValue").textContent = photoNo;
+            document.getElementById("photoNoValue2").textContent = photoNo;
+            document.getElementById("meterSerialValue").textContent = meterSerial;
+            document.getElementById("meterSerialValue2").textContent = meterSerial;
+            document.getElementById("consumerNameValue").textContent = consumerName;
+            document.getElementById("connectionTypeValue").textContent = connectionType;
+            document.getElementById("smartMeterValue").textContent = smartMeter;
+            document.getElementById("consumerNumberValue").textContent = consumerNumber;
+            document.getElementById("manufacturerValue").textContent = manufacturer;
+            document.getElementById("communicationValue").textContent = communication;
+            document.getElementById("inspectionValue").textContent = inspection;
+            document.getElementById("addressValue").textContent = address;
+            document.getElementById("remarkValue").textContent = remark;
+
+        }
+
+        document
+            .getElementById("photoNo")
+            .addEventListener(
+                "keypress",
+                function (e) {
+
+                    if (e.key === "Enter") {
+                        searchRecord();
+                    }
+
+                }
+            );
+
+
+
+        // GPS IMAGE SCRIPT
+
+        //download PDF
+        loadSheets();
+
+    </script>
+
+</body>
+
+
+
+</html>
