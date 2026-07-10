@@ -627,8 +627,12 @@
             const communication =
                 data["Type of communication"] || "";
 
-            const inspection =
-                data["Date of Inspection"] || "";
+            const inspection = data["Date of Inspection"]
+  ? new Date(data["Date of Inspection"]).toLocaleDateString(
+      "en-GB",
+      { timeZone: "Asia/Kolkata" }
+    )
+  : "";
 
             const address =
                 data["Address"] || "";
